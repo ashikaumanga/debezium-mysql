@@ -77,6 +77,14 @@ public class KafkaDatabaseHistory extends AbstractDatabaseHistory {
                                            .withDescription("The name of the topic for the database schema history")
                                            .withValidation(Field::isRequired);
 
+    public static final Field CONSUMER_GROUP = Field.create(CONFIGURATION_FIELD_PREFIX_STRING + "kafka.consumer.group")
+            .withDisplayName("Database history topic consumer group")
+            .withType(Type.STRING)
+            .withWidth(Width.LONG)
+            .withImportance(Importance.LOW)
+            .withDescription("The name of the topic consumer group for the database schema history")
+            .withValidation(Field::isRequired);
+
     public static final Field BOOTSTRAP_SERVERS = Field.create(CONFIGURATION_FIELD_PREFIX_STRING + "kafka.bootstrap.servers")
                                                        .withDisplayName("Kafka broker addresses")
                                                        .withType(Type.STRING)
@@ -108,7 +116,7 @@ public class KafkaDatabaseHistory extends AbstractDatabaseHistory {
                                                             .withDefault(100)
                                                             .withValidation(Field::isInteger);
 
-    public static Field.Set ALL_FIELDS = Field.setOf(TOPIC, BOOTSTRAP_SERVERS, DatabaseHistory.NAME,
+    public static Field.Set ALL_FIELDS = Field.setOf(TOPIC, CONSUMER_GROUP, BOOTSTRAP_SERVERS, DatabaseHistory.NAME,
                                                      RECOVERY_POLL_INTERVAL_MS, RECOVERY_POLL_ATTEMPTS);
 
     private static final String CONSUMER_PREFIX = CONFIGURATION_FIELD_PREFIX_STRING + "consumer.";
@@ -142,10 +150,11 @@ public class KafkaDatabaseHistory extends AbstractDatabaseHistory {
         String bootstrapServers = config.getString(BOOTSTRAP_SERVERS);
         // Copy the relevant portions of the configuration and add useful defaults ...
         String dbHistoryName = config.getString(DatabaseHistory.NAME, UUID.randomUUID().toString());
+        String consumerGroup = config.getString(CONSUMER_GROUP) == null ? dbHistoryName : config.getString(CONSUMER_GROUP);
         this.consumerConfig = config.subset(CONSUMER_PREFIX, true).edit()
                                     .withDefault(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
                                     .withDefault(ConsumerConfig.CLIENT_ID_CONFIG, dbHistoryName)
-                                    .withDefault(ConsumerConfig.GROUP_ID_CONFIG, dbHistoryName)
+                                    .withDefault(ConsumerConfig.GROUP_ID_CONFIG, consumerGroup)
                                     .withDefault(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, 1) // get even smallest message
                                     .withDefault(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false)
                                     .withDefault(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 10000) //readjusted since 0.10.1.0
