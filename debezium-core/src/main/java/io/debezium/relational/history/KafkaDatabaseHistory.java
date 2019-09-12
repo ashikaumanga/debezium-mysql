@@ -63,6 +63,8 @@ public class KafkaDatabaseHistory extends AbstractDatabaseHistory {
      */
     private static final String DEFAULT_TOPIC_REPLICATION_FACTOR_PROP_NAME = "default.replication.factor";
 
+    private static final int SPDB_DEFAULT_PARTITION_COUNT = 3;
+
     /**
      * The default replication factor for the history topic which is used in case
      * the value couldn't be retrieved from the broker.
@@ -354,12 +356,13 @@ public class KafkaDatabaseHistory extends AbstractDatabaseHistory {
         try (AdminClient admin = AdminClient.create(this.producerConfig.asProperties())) {
 
             // Find default replication factor
-            final short replicationFactor = getDefaultTopicReplicationFactor(admin);
+            final short replicationFactor = SPDB_DEFAULT_PARTITION_COUNT; //getDefaultTopicReplicationFactor(admin);
 
             // Create topic
             final NewTopic topic = new NewTopic(topicName, (short) 1, replicationFactor);
             topic.configs(Collect.hashMapOf("cleanup.policy", "delete", "retention.ms", Long.toString(Long.MAX_VALUE), "retention.bytes", "-1"));
             admin.createTopics(Collections.singleton(topic));
+
 
             logger.info("Database history topic '{}' created", topic);
         }
